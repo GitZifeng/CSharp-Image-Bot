@@ -15,17 +15,17 @@ namespace BotTemplate.EmulatorClasses
     {
         public static string NoxDirectory;
         public static Dictionary<string, string> NoxInstances;
-        
+
         public bool IsNoxInstalled()
         {
             const string keyName = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Nox";
             const string valueName = "DisplayName";
-            
+
             using (var key = Registry.LocalMachine.OpenSubKey(keyName))
             {
                 var value = key?.GetValue(valueName);
                 if (value == null) return false;
-                
+
                 GetNoxPath();
                 return true;
             }
@@ -34,11 +34,11 @@ namespace BotTemplate.EmulatorClasses
         public void StartNox()
         {
             if (!IsNoxInstalled()) return;
-            
+
             if (InstanceAlreadyRunning(DebugForm.SelectedEmuInstance.Text)) return;
 
             var noxExePath = NoxDirectory + @"\Nox.exe";
-            
+
             DebugForm.WarningLog("Found the path for NOX: " + noxExePath);
 
             var noxProcess = new Process();
@@ -57,7 +57,7 @@ namespace BotTemplate.EmulatorClasses
                 return GetCommandLine(process).Contains(instanceName);
             }
 
-            DebugForm.ErrorLog(instanceName +" is not running!");
+            DebugForm.ErrorLog(instanceName + " is not running!");
 
             return false;
         }
@@ -67,13 +67,13 @@ namespace BotTemplate.EmulatorClasses
             while (true)
             {
                 var adbProcessOutput = new ADB().RunADB("shell getprop dev.bootcomplete");
-                
+
                 if (adbProcessOutput.Equals("1\r\r\n"))
                 {
                     DebugForm.WarningLog(adbProcessOutput);
                     break;
                 }
-                
+
                 Thread.Sleep(500);
             }
         }
@@ -82,18 +82,18 @@ namespace BotTemplate.EmulatorClasses
         {
             const string keyName = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Nox";
             const string valueName = "UninstallString";
-            
+
             using (var key = Registry.LocalMachine.OpenSubKey(keyName))
             {
                 if (key == null) return null;
-                
+
                 var value = key.GetValue(valueName);
 
                 if (value.ToString().Length <= 0) return null;
-                
+
                 var noxDirectoryInt = value.ToString().LastIndexOf('\\');
-                
-                NoxDirectory = value.ToString().Substring(0, noxDirectoryInt); 
+
+                NoxDirectory = value.ToString().Substring(0, noxDirectoryInt);
                 return value.ToString().Substring(0, noxDirectoryInt);
             }
         }
@@ -101,10 +101,9 @@ namespace BotTemplate.EmulatorClasses
         public IEnumerable<string> ListNoxInstances()
         {
             if (!IsNoxInstalled()) return null;
-            
-            var matchingFiles = Directory.GetFiles(NoxDirectory + @"\BignoxVMS", "*.vbox", SearchOption.AllDirectories);
 
-            
+            var matchingFiles = Directory.GetFiles("F:\\Apps\\Nox\\bin" + @"\BignoxVMS", "*.vbox", SearchOption.AllDirectories);
+
             NoxInstances = new Dictionary<string, string>();
             foreach (var file in matchingFiles)
             {
@@ -122,6 +121,7 @@ namespace BotTemplate.EmulatorClasses
                             case 2:
                                 hostIp = value.ToString().Trim('"');
                                 break;
+
                             case 3:
                                 hostPort = value.ToString().Trim('"');
                                 break;
@@ -135,18 +135,18 @@ namespace BotTemplate.EmulatorClasses
                 var instancePathInt = file.LastIndexOf('\\');
                 var instanceFile = file.Substring(instancePathInt + 1);
                 var instanceNameInt = instanceFile.LastIndexOf('.');
-                var instanceName= instanceFile.Substring(0, instanceNameInt);
-                
+                var instanceName = instanceFile.Substring(0, instanceNameInt);
+
                 DebugForm.WarningLog(instanceName + " Host: " + hostIp + " Port: " + hostPort);
-                
+
                 NoxInstances.Add(instanceName, hostIp + ":" + hostPort);
             }
-            
+
             var instances = (from item in matchingFiles let instancePathInt = item.LastIndexOf('\\') select item.Substring(instancePathInt + 1) into instanceFile let instanceFileInt = instanceFile.LastIndexOf('.') select instanceFile.Substring(0, instanceFileInt)).ToList();
-            
+
             return instances;
         }
-        
+
         private string GetCommandLine(Process process)
         {
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id))
@@ -154,7 +154,6 @@ namespace BotTemplate.EmulatorClasses
             {
                 return objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString();
             }
-
         }
     }
 }
